@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#8E1D24">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hand">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}
+/* standalone: red bar runs under the status bar / notch; content stays clear of it */
+header.band{padding-top:calc(12px + env(safe-area-inset-top,0px))!important}
+main{padding-bottom:calc(32px + env(safe-area-inset-bottom,0px))!important}
+html,body{overscroll-behavior-y:none}
+</style>
+</head><body>
+<title>Hand Scorekeeper</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Sadu (السدو) accents: the app bar is woven red, edged with a diamond-chain band; the round card, leader card and winner card carry a strip of teeth (ضروس).
+   Layout: compact felt app bar (title + settings, round pips), standings grid, round card with sticky save bar, rounds table.
+   Single column, max 720px. RTL-ready via logical properties. Touch targets >= 48px. */
+:root{
+  --paper:#eef1ee; --surface:#ffffff; --sunk:#f4f7f5; --ink:#14201a; --muted:#56655d; --line:#d3ddd7; --line-strong:#b9c7bf;
+  --felt:#17533d; --felt-hi:#1f6a4f; --on-felt:#f2faf6; --red:#b3262f; --red-soft:#fbe9ea;
+  --gold:#8a650f; --gold-hi:#d9a734; --gold-soft:#f7eed8; --win:#17533d; --win-soft:#e0eee7; --link:#17533d;
+  --shadow:0 1px 2px #14201a14,0 2px 8px #14201a0d;
+  --f-display:"Reem Kufi","Noto Kufi Arabic",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans","IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --r-sm:10px; --r:14px; --r-lg:20px; --tap:48px; --ease:cubic-bezier(.2,.7,.3,1);
+  --hdr:#8e1d24; --hdr-ink:#f6eee0; --jj-bg:#b9dbc8; --jj-ink:#0f4330; --jj-line:#8fc2a6;
+  --sadu-band:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='57' shape-rendering='crispEdges'%3E%3Crect x='0' y='0' width='36' height='3' fill='%232d5a3f'/%3E%3Crect x='0' y='3' width='36' height='3' fill='%231c1613'/%3E%3Crect x='0' y='6' width='36' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='9' width='36' height='3' fill='%231c1613'/%3E%3Crect x='0' y='12' width='15' height='3' fill='%23a3222a'/%3E%3Crect x='15' y='12' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='18' y='12' width='3' height='3' fill='%231c1613'/%3E%3Crect x='21' y='12' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='24' y='12' width='12' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='15' width='12' height='3' fill='%23a3222a'/%3E%3Crect x='12' y='15' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='15' y='15' width='3' height='3' fill='%231c1613'/%3E%3Crect x='18' y='15' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='21' y='15' width='3' height='3' fill='%231c1613'/%3E%3Crect x='24' y='15' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='27' y='15' width='9' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='18' width='9' height='3' fill='%23a3222a'/%3E%3Crect x='9' y='18' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='12' y='18' width='3' height='3' fill='%231c1613'/%3E%3Crect x='15' y='18' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='18' y='18' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='21' y='18' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='24' y='18' width='3' height='3' fill='%231c1613'/%3E%3Crect x='27' y='18' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='30' y='18' width='6' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='21' width='6' height='3' fill='%23a3222a'/%3E%3Crect x='6' y='21' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='9' y='21' width='3' height='3' fill='%231c1613'/%3E%3Crect x='12' y='21' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='15' y='21' width='9' height='3' fill='%23a3222a'/%3E%3Crect x='24' y='21' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='27' y='21' width='3' height='3' fill='%231c1613'/%3E%3Crect x='30' y='21' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='33' y='21' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='24' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='3' y='24' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='6' y='24' width='3' height='3' fill='%231c1613'/%3E%3Crect x='9' y='24' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='12' y='24' width='6' height='3' fill='%23a3222a'/%3E%3Crect x='18' y='24' width='3' height='3' fill='%231c1613'/%3E%3Crect x='21' y='24' width='6' height='3' fill='%23a3222a'/%3E%3Crect x='27' y='24' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='30' y='24' width='3' height='3' fill='%231c1613'/%3E%3Crect x='33' y='24' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='0' y='27' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='3' y='27' width='3' height='3' fill='%231c1613'/%3E%3Crect x='6' y='27' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='9' y='27' width='6' height='3' fill='%23a3222a'/%3E%3Crect x='15' y='27' width='3' height='3' fill='%231c1613'/%3E%3Crect x='18' y='27' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='21' y='27' width='3' height='3' fill='%231c1613'/%3E%3Crect x='24' y='27' width='6' height='3' fill='%23a3222a'/%3E%3Crect x='30' y='27' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='33' y='27' width='3' height='3' fill='%231c1613'/%3E%3Crect x='0' y='30' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='3' y='30' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='6' y='30' width='3' height='3' fill='%231c1613'/%3E%3Crect x='9' y='30' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='12' y='30' width='6' height='3' fill='%23a3222a'/%3E%3Crect x='18' y='30' width='3' height='3' fill='%231c1613'/%3E%3Crect x='21' y='30' width='6' height='3' fill='%23a3222a'/%3E%3Crect x='27' y='30' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='30' y='30' width='3' height='3' fill='%231c1613'/%3E%3Crect x='33' y='30' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='0' y='33' width='6' height='3' fill='%23a3222a'/%3E%3Crect x='6' y='33' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='9' y='33' width='3' height='3' fill='%231c1613'/%3E%3Crect x='12' y='33' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='15' y='33' width='9' height='3' fill='%23a3222a'/%3E%3Crect x='24' y='33' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='27' y='33' width='3' height='3' fill='%231c1613'/%3E%3Crect x='30' y='33' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='33' y='33' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='36' width='9' height='3' fill='%23a3222a'/%3E%3Crect x='9' y='36' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='12' y='36' width='3' height='3' fill='%231c1613'/%3E%3Crect x='15' y='36' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='18' y='36' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='21' y='36' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='24' y='36' width='3' height='3' fill='%231c1613'/%3E%3Crect x='27' y='36' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='30' y='36' width='6' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='39' width='12' height='3' fill='%23a3222a'/%3E%3Crect x='12' y='39' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='15' y='39' width='3' height='3' fill='%231c1613'/%3E%3Crect x='18' y='39' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='21' y='39' width='3' height='3' fill='%231c1613'/%3E%3Crect x='24' y='39' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='27' y='39' width='9' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='42' width='15' height='3' fill='%23a3222a'/%3E%3Crect x='15' y='42' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='18' y='42' width='3' height='3' fill='%231c1613'/%3E%3Crect x='21' y='42' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='24' y='42' width='12' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='45' width='36' height='3' fill='%231c1613'/%3E%3Crect x='0' y='48' width='36' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='51' width='36' height='3' fill='%231c1613'/%3E%3Crect x='0' y='54' width='36' height='3' fill='%232d5a3f'/%3E%3C/svg%3E"); --sadu-band-h:57px; --sadu-band-w:36px;
+  --sadu-teeth:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Crect x='0' y='0' width='12' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='3' width='9' height='3' fill='%231c1613'/%3E%3Crect x='9' y='3' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='0' y='6' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='3' y='6' width='3' height='3' fill='%231c1613'/%3E%3Crect x='6' y='6' width='6' height='3' fill='%23efe5d1'/%3E%3Crect x='0' y='9' width='12' height='3' fill='%23a3222a'/%3E%3C/svg%3E"); --sadu-teeth-h:12px;
+  --sadu-mark:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='27' height='27' shape-rendering='crispEdges'%3E%3Crect x='0' y='0' width='12' height='3' fill='%23a3222a'/%3E%3Crect x='12' y='0' width='3' height='3' fill='%231c1613'/%3E%3Crect x='15' y='0' width='12' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='3' width='9' height='3' fill='%23a3222a'/%3E%3Crect x='9' y='3' width='3' height='3' fill='%231c1613'/%3E%3Crect x='12' y='3' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='15' y='3' width='3' height='3' fill='%231c1613'/%3E%3Crect x='18' y='3' width='9' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='6' width='6' height='3' fill='%23a3222a'/%3E%3Crect x='6' y='6' width='3' height='3' fill='%231c1613'/%3E%3Crect x='9' y='6' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='12' y='6' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='15' y='6' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='18' y='6' width='3' height='3' fill='%231c1613'/%3E%3Crect x='21' y='6' width='6' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='9' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='3' y='9' width='3' height='3' fill='%231c1613'/%3E%3Crect x='6' y='9' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='9' y='9' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='12' y='9' width='3' height='3' fill='%231c1613'/%3E%3Crect x='15' y='9' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='18' y='9' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='21' y='9' width='3' height='3' fill='%231c1613'/%3E%3Crect x='24' y='9' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='12' width='3' height='3' fill='%231c1613'/%3E%3Crect x='3' y='12' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='6' y='12' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='9' y='12' width='3' height='3' fill='%231c1613'/%3E%3Crect x='12' y='12' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='15' y='12' width='3' height='3' fill='%231c1613'/%3E%3Crect x='18' y='12' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='21' y='12' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='24' y='12' width='3' height='3' fill='%231c1613'/%3E%3Crect x='0' y='15' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='3' y='15' width='3' height='3' fill='%231c1613'/%3E%3Crect x='6' y='15' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='9' y='15' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='12' y='15' width='3' height='3' fill='%231c1613'/%3E%3Crect x='15' y='15' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='18' y='15' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='21' y='15' width='3' height='3' fill='%231c1613'/%3E%3Crect x='24' y='15' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='18' width='6' height='3' fill='%23a3222a'/%3E%3Crect x='6' y='18' width='3' height='3' fill='%231c1613'/%3E%3Crect x='9' y='18' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='12' y='18' width='3' height='3' fill='%23a3222a'/%3E%3Crect x='15' y='18' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='18' y='18' width='3' height='3' fill='%231c1613'/%3E%3Crect x='21' y='18' width='6' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='21' width='9' height='3' fill='%23a3222a'/%3E%3Crect x='9' y='21' width='3' height='3' fill='%231c1613'/%3E%3Crect x='12' y='21' width='3' height='3' fill='%23efe5d1'/%3E%3Crect x='15' y='21' width='3' height='3' fill='%231c1613'/%3E%3Crect x='18' y='21' width='9' height='3' fill='%23a3222a'/%3E%3Crect x='0' y='24' width='12' height='3' fill='%23a3222a'/%3E%3Crect x='12' y='24' width='3' height='3' fill='%231c1613'/%3E%3Crect x='15' y='24' width='12' height='3' fill='%23a3222a'/%3E%3C/svg%3E");
+}
+:root[lang="ar"]{ --f-body:"IBM Plex Sans Arabic","IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif }
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0b1310; --surface:#131d19; --sunk:#0f1814; --ink:#e6eee9; --muted:#9aaba2; --line:#24322b; --line-strong:#33453c;
+  --felt:#164a37; --felt-hi:#1d5e46; --on-felt:#eef8f3; --red:#f07780; --red-soft:#3a1c20;
+  --gold:#e8bd55; --gold-hi:#e8bd55; --gold-soft:#2c2412; --win:#62cfa1; --win-soft:#17302a; --link:#62cfa1;
+  --shadow:0 1px 2px #0006; --hdr:#6c151b; --jj-bg:#1f5440; --jj-ink:#a6ecc9; --jj-line:#2f6b53; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0b1310; --surface:#131d19; --sunk:#0f1814; --ink:#e6eee9; --muted:#9aaba2; --line:#24322b; --line-strong:#33453c;
+  --felt:#164a37; --felt-hi:#1d5e46; --on-felt:#eef8f3; --red:#f07780; --red-soft:#3a1c20;
+  --gold:#e8bd55; --gold-hi:#e8bd55; --gold-soft:#2c2412; --win:#62cfa1; --win-soft:#17302a; --link:#62cfa1;
+  --shadow:0 1px 2px #0006; --hdr:#6c151b; --jj-bg:#1f5440; --jj-ink:#a6ecc9; --jj-line:#2f6b53; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+button:disabled{cursor:not-allowed}
+:focus-visible{outline:2px solid var(--gold-hi);outline-offset:2px}
+.ico{width:20px;height:20px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ico.sm{width:16px;height:16px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+.alt{color:var(--muted);font-size:.9em}
+.hint{font-size:13.5px;color:var(--muted)}
+.lab{font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+
+/* press feedback */
+.press{transition:transform .12s var(--ease),background-color .15s,border-color .15s,color .15s}
+.press:active:not(:disabled){transform:scale(.97)}
+@media (prefers-reduced-motion: reduce){.press{transition:none}.press:active:not(:disabled){transform:none;opacity:.8}}
+
+/* app bar */
+header.band{background:var(--hdr);color:var(--hdr-ink);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 16px;position:relative;overflow:hidden}
+header.band::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 140% at 100% 0%,#ffffff12 0,transparent 55%),repeating-linear-gradient(0deg,#00000014 0 1px,transparent 1px 3px)}
+.sadu-band{height:var(--sadu-band-h);background:var(--sadu-band) repeat-x;background-position:center top}
+.wrap{max-width:720px;margin:0 auto}
+.band .wrap{display:grid;gap:12px;position:relative;z-index:1}
+.bar-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:var(--tap)}
+.bar-row h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:22px;line-height:1.15;display:flex;align-items:center;gap:10px;min-width:0}
+.bar-row h1 .mark{width:33px;height:33px;border-radius:8px;background:var(--sadu-mark) center/27px 27px no-repeat,#efe5d1;box-shadow:0 0 0 2px #1c1613;flex:none;image-rendering:pixelated}
+.bar-row h1 span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon-btn{width:var(--tap);height:var(--tap);border-radius:14px;border:1px solid #ffffff2e;background:#00000026;color:var(--hdr-ink);display:grid;place-items:center;padding:0;flex:none}
+.icon-btn:hover{background:#ffffff26}
+.meta-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.meta-row .sub{font-size:13.5px;opacity:.85}
+.prog{display:flex;align-items:center;gap:10px}
+.prog .val{font-size:13.5px;font-weight:600;white-space:nowrap}
+.pips{display:flex;gap:4px}
+.pips i{width:14px;height:6px;border-radius:1px;background:#00000040}
+.pips i.done{background:var(--hdr-ink)}
+.pips i.now{background:#e8bd55;box-shadow:0 0 0 2px #e8bd5559}
+
+main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px calc(32px + env(safe-area-inset-bottom,0px))}
+main .wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:24px}
+main .wrap > *{min-width:0}
+
+.sec-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 8px;min-height:var(--tap)}
+.sec-h h2{margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.link{background:none;border:0;padding:0 12px;min-height:var(--tap);border-radius:12px;color:var(--link);font-weight:600;font-size:15px;display:inline-flex;align-items:center;gap:6px;margin-inline-end:-12px}
+.link:hover:not(:disabled){background:var(--win-soft)}
+.link:disabled{color:var(--muted);opacity:.55}
+.note{font-size:14px;color:var(--muted);background:var(--sunk);border:1px dashed var(--line-strong);border-radius:var(--r-sm);padding:10px 12px}
+
+/* standings */
+.standings{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.pl{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:grid;gap:2px;align-content:start;box-shadow:var(--shadow)}
+.pl .rk{display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0}
+.pl .nm{min-width:0;font-weight:600;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl .tag{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);font-weight:700;flex:none}
+.pl .tot{font-family:var(--f-num);font-size:28px;font-weight:600;line-height:1.2;text-align:start;letter-spacing:-.02em}
+.pl .dl{font-size:13.5px;color:var(--muted);line-height:1.4;margin-top:2px}
+.pl .dl b{color:var(--ink);font-weight:600}
+.pl .dl .tie{white-space:nowrap}
+.pred{display:grid;gap:6px;margin-top:4px}
+.crow{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.tk{display:inline-grid;place-items:center;min-width:32px;height:28px;padding:0 7px;border-radius:7px;font:700 14px/1 var(--f-num);letter-spacing:.04em;direction:ltr;border:1px solid transparent}
+.tk.t0{background:var(--sunk);color:var(--muted);border-color:var(--line-strong)}
+.tk.t1{background:var(--win-soft);color:var(--win);border-color:var(--jj-line)}
+.tk.t2{background:var(--jj-bg);color:var(--jj-ink);border-color:var(--jj-line)}
+.tk.t3{background:var(--felt);color:var(--on-felt);border-color:var(--felt)}
+.tk.tz{background:#b3262f;color:#fff;border-color:#b3262f}
+.tk.dash{background:none;border-style:dashed}
+.crow.alt{opacity:.7}
+.crow.alt .tk{height:24px;min-width:28px;font-size:12.5px}
+.times{font-size:12.5px;color:var(--muted);margin-inline-start:1px}
+.tie{display:inline-flex;align-items:center;gap:4px;margin-inline-start:4px}
+.ahead{font-size:14px}.ahead b{color:var(--ink)}
+.pl .dl .zat{display:inline-block;margin-top:2px;line-height:1.5;padding:3px 10px 3px 8px;border-radius:8px;background:var(--red-soft);color:var(--red);font-weight:600}
+.pl .dl .zat b{color:inherit}
+.pl .dl .zat::before{content:"";display:inline-block;vertical-align:-1px;margin-inline-end:6px;width:12px;height:12px;background:var(--sadu-mark) center/12px 12px no-repeat;image-rendering:pixelated}
+.pl .dl .zat-why{font-size:12.5px}
+.pl.lead{border-color:var(--gold);padding-top:22px;background:var(--sadu-teeth) top left/auto var(--sadu-teeth-h) repeat-x,linear-gradient(var(--gold-soft),var(--surface) 70%);box-shadow:inset 0 0 0 1px var(--gold),var(--shadow)}
+
+/* round card */
+.card{background:var(--sadu-teeth) top left/auto var(--sadu-teeth-h) repeat-x,var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:26px 16px 16px;display:grid;gap:20px;box-shadow:var(--shadow)}
+.card h3{margin:0;font-family:var(--f-display);font-size:22px;font-weight:700;line-height:1.2}
+.field{display:grid;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+.chip{min-height:var(--tap);border:1px solid var(--line-strong);background:var(--sunk);border-radius:var(--r);padding:8px 14px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:0;font-size:16px;font-weight:600;line-height:1.25;text-align:center}
+.chip:hover{border-color:var(--felt-hi)}
+.chip small{font-size:12px;font-weight:500;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--felt);border-color:var(--felt);color:var(--on-felt)}
+.chip[aria-pressed="true"] small{color:var(--on-felt);opacity:.9}
+
+.drawer{border:1px solid var(--line);border-radius:var(--r);background:var(--sunk)}
+.drawer-t{width:100%;min-height:64px;display:flex;justify-content:space-between;align-items:center;gap:12px;background:none;border:0;padding:12px 14px;text-align:start;border-radius:var(--r)}
+.drawer-t .lab{display:block}
+.drawer-t .sum{font-size:15px}
+.drawer-t .tog{display:inline-flex;align-items:center;gap:4px;font-size:14px;font-weight:600;color:var(--link);text-align:end}
+.drawer-t .tog .ico{transition:transform .2s var(--ease)}
+.drawer.open .drawer-t .tog .ico{transform:rotate(180deg)}
+.drawer-b{padding:0 10px 10px;display:grid;gap:10px}
+.rows{display:grid;gap:8px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface)}
+.row .who{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .who .hint{font-weight:400}
+.row .pts{font-family:var(--f-num);font-weight:600;font-size:17px;text-align:end;min-width:64px}
+.row .ctl{grid-column:1/-1;display:grid;gap:10px}
+.row.is-foul .pts{color:var(--red)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;background:var(--surface)}
+.seg button{min-height:var(--tap);border:0;background:none;padding:6px 8px;font-size:14px;font-weight:500;line-height:1.2;border-inline-start:1px solid var(--line-strong);display:inline-flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap}
+.seg button:first-child{border-inline-start:0}
+.seg button .ico{display:none}
+.seg button[aria-pressed="true"] .ico{display:inline-block}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper);font-weight:600}
+.seg button.foul[aria-pressed="true"]{background:var(--red);color:#fff}
+.seg button.eid[aria-pressed="true"]{background:var(--gold);color:var(--surface)}
+.seg button.eid .num{font-size:12.5px;opacity:.85}
+sup.eidm{font-family:var(--f-body);font-size:10px;color:var(--gold);margin-inline-start:3px;font-weight:700}
+sup.downm{font-family:var(--f-body);font-size:10px;color:var(--link);margin-inline-start:3px;font-weight:700}
+.cards{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;color:var(--muted)}
+.cards input{width:110px;min-height:var(--tap);padding:8px 12px;border:1px solid var(--line-strong);border-radius:12px;background:var(--sunk);font-family:var(--f-num);font-size:18px;text-align:center}
+.cards input.err{border-color:var(--red);background:var(--red-soft)}
+
+.actions{position:sticky;bottom:0;z-index:5;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:0 -16px -16px;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line);border-radius:0 0 var(--r-lg) var(--r-lg)}
+.actions .tot{display:grid;line-height:1.2}
+.actions .tot b{font-size:20px}
+.actions .btns{display:flex;gap:8px;margin-inline-start:auto}
+.btn{min-height:var(--tap);border:1px solid var(--line-strong);background:var(--surface);border-radius:14px;padding:0 20px;font-weight:600;font-size:16px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.primary{background:var(--felt);border-color:var(--felt);color:var(--on-felt);min-width:140px}
+.btn.primary:hover:not(:disabled){background:var(--felt-hi)}
+.btn.primary:disabled{background:var(--sunk);border-color:var(--line);color:var(--muted)}
+.err-msg{color:var(--red);font-size:14px;font-weight:500;background:var(--red-soft);border-radius:var(--r-sm);padding:10px 12px}
+
+/* bottom sheets */
+.scrim{position:fixed;inset:0;background:#000a;z-index:20}
+@media (prefers-reduced-motion: no-preference){.scrim{animation:fade .18s ease-out}@keyframes fade{from{opacity:0}}}
+.sheet{max-height:88vh;overflow-y:auto;position:fixed;z-index:21;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;background:var(--surface);color:var(--ink);border-radius:24px 24px 0 0;display:grid;gap:16px;
+  padding:10px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));box-shadow:0 -12px 40px #0005}
+@media (prefers-reduced-motion: no-preference){.sheet{animation:up .24s var(--ease)}@keyframes up{from{transform:translateY(40px);opacity:.3}}}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line-strong);justify-self:center}
+.sheet-h{font-family:var(--f-display);font-size:21px;line-height:1.25}
+.ptypes{display:grid;gap:8px}
+.ptype{min-height:60px;display:grid;grid-template-columns:1fr auto;grid-template-areas:"a pts" "b pts";align-items:center;gap:0 12px;text-align:start;border:1px solid var(--line-strong);background:var(--surface);border-radius:var(--r);padding:10px 14px}
+.ptype:hover{border-color:var(--felt-hi)}
+.ptype .a{grid-area:a;font-weight:600;font-size:16px}
+.ptype .b{grid-area:b;font-size:13.5px;color:var(--muted)}
+.ptype .num{grid-area:pts;font-weight:600;font-size:18px;color:var(--win)}
+.ptype[aria-pressed="true"]{background:var(--felt);border-color:var(--felt);color:var(--on-felt)}
+.ptype[aria-pressed="true"] .b,.ptype[aria-pressed="true"] .num{color:var(--on-felt)}
+
+/* settings */
+.set-sec{display:grid;gap:10px}
+.set-sec h4{margin:0;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.set-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--sunk)}
+.switch{display:inline-flex;background:var(--surface);border:1px solid var(--line-strong);border-radius:999px;padding:3px;gap:2px}
+.switch button{min-height:42px;border:0;background:none;border-radius:999px;padding:0 16px;font-size:14.5px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.switch button[aria-pressed="true"]{background:var(--felt);color:var(--on-felt)}
+.ref-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-sm)}
+.ref-wrap table{min-width:480px}
+
+/* toast */
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:30;width:max-content;max-width:calc(100% - 32px)}
+.toast{background:var(--ink);color:var(--paper);border-radius:var(--r);padding-block:6px;padding-inline:16px 6px;display:flex;align-items:center;gap:12px;box-shadow:0 10px 30px #0005;font-size:15px}
+@media (prefers-reduced-motion: no-preference){.toast{animation:up .22s var(--ease)}}
+.toast button{min-height:44px;background:none;border:0;color:var(--gold-hi);border-radius:10px;padding:0 14px;font-weight:700;display:inline-flex;align-items:center;gap:6px}
+
+/* rounds table */
+.tbl-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;min-width:520px}
+th,td{padding:10px 10px;text-align:end;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.05em;text-transform:uppercase;background:var(--sunk);position:sticky;top:0}
+th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:start}
+td.c{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:15px}
+td.c.w{color:var(--win);font-weight:600}
+td.c.f{color:var(--red);font-weight:600}
+td.c.f::after{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-inline-start:5px;vertical-align:middle}
+tfoot td{font-weight:600;background:var(--sunk);border-bottom:0}
+tfoot td.c{font-size:17px}
+tr.row-click{cursor:pointer}
+tr.row-click:hover td{background:var(--sunk)}
+tr.editing td{background:var(--gold-soft)}
+.type-tag{font-size:13.5px}
+.rowbtn{width:44px;height:44px;background:none;border:0;border-radius:10px;color:var(--muted);display:inline-grid;place-items:center;padding:0}
+.rowbtn:hover{background:var(--red-soft);color:var(--red)}
+td:last-child{padding-block:2px;padding-inline-end:4px}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+.confirm{display:inline-flex;gap:4px;align-items:center;font-size:14px}
+.confirm .rowbtn{width:auto;padding:0 10px;font-weight:600}
+
+/* final */
+.final{background:var(--sadu-band) top left/auto 38px repeat-x,var(--gold-soft);border:1px solid var(--gold);border-radius:var(--r-lg);padding:52px 18px 18px;display:grid;gap:10px}
+.final h3{margin:0;font-family:var(--f-display);font-size:24px;display:flex;align-items:center;gap:8px}
+
+/* setup */
+.names{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.names input{min-height:var(--tap);padding:8px 12px;border:1px solid var(--line-strong);border-radius:12px;background:var(--sunk);width:100%;font-size:16px}
+.setup-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:14px}
+</style>
+
+<header class="band">
+  <div class="wrap">
+    <div class="bar-row">
+      <h1><span class="mark" aria-hidden="true"></span><span id="apptitle">Hand Scorekeeper</span></h1>
+      <button class="icon-btn press" id="gear" data-a="settings" aria-label="Settings" aria-haspopup="dialog"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    </div>
+    <div class="meta-row"><div class="sub" id="subline"></div><div class="prog" id="progress"></div></div>
+  </div>
+</header>
+<div class="sadu-band" aria-hidden="true"></div>
+
+<main><div class="wrap" id="app"></div></main>
+<div id="sheet"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+const TYPES = [
+  {id:'tkh',   en:'Takhleesa',           ar:'تخليصة',          win:-30,  none:100,  mult:1,  foul:150,  eid:0},
+  {id:'norm',  en:'Normal Hand',         ar:'هاند عادي',       win:-60,  none:200,  mult:2,  foul:300,  eid:50},
+  {id:'joker', en:'Joker',               ar:'هاند جوكري',      win:-120, none:400,  mult:4,  foul:600,  eid:100},
+  {id:'dbl',   en:'Double Joker',        ar:'دبل جوكري',       win:-240, none:800,  mult:8,  foul:1200, eid:200},
+  {id:'dblc',  en:'Double Joker Colored',ar:'دبل جوكري ملوّن', win:-480, none:1600, mult:32, foul:4800, eid:400},
+];
+const T = Object.fromEntries(TYPES.map(t=>[t.id,t]));
+T.color = T.joker; T.zat = T.dbl; // older saved rounds
+const KEY = 'hand-scorekeeper-v1', PKEY = 'hand-scorekeeper-prefs';
+
+const STR = {
+ en:{
+  appTitle:'Hand Scorekeeper', sub:'{p} players · {r} rounds · lowest total wins', round:'Round', gameOver:'Game over',
+  sampleNote:'This is an example game so you can try things out. Start your own from <b>Settings</b> (the gear icon) → New game.',
+  standings:'Standings', undo:'Undo', nothingUndo:'Nothing to undo', leading:'Leading', winner:'Winner',
+  needsNote:'“Needs” assumes the other players don’t go down, and only counts the rounds left.',
+  wins:'{n} wins', finalTotal:'Final total {t} after {r} rounds. Tap any round below to correct it.', newGame:'New game',
+  editingRound:'Editing round {i}', roundN:'Round {i}', whoFinished:'Who finished?', howFinish:'How did {n} finish?', cancel:'Cancel',
+  everyoneElse:'Everyone else', allNotDown:'All not down', allNotDownEach:'All not down · {n} each',
+  xDown:'{n} went down', xFoul:'{n} foul', xNotDown:'{n} not down', drawerOpen:'Went down or foul?', hide:'Hide',
+  rulesHint:'Not down = {none} (default) · Went down = cards left × {m}{tk} · Foul = {foul}', tkJoker:' (count a joker as 20)',
+  eid:'From the hand', eidShort:'hand', downShort:'down', xEid:'{n} from the hand', eidHint:' · From the hand = +{e} (one player)', pickFirst:'Pick who finished first.', notDown:'not down', wentDown:'Went down', foul:'Foul', cardsLeft:'Cards left',
+  roundTotal:'Round total:', saveRound:'Save round', saveChanges:'Save changes',
+  rounds:'Rounds', tapEdit:'Tap a round to edit it', finish:'Finish', total:'Total', noRounds:'No rounds yet. Record the first round above.',
+  delQ:'Delete?', yes:'Yes', no:'No', deleteRound:'Delete round {i}',
+  settings:'Settings', game:'Game', gameInfo:'{p} players · 9 rounds per game. Starting a new game replaces this one (you can undo it).',
+  appearance:'Appearance', bright:'Bright', night:'Night', language:'Language',
+  scoringRef:'Scoring reference', finisher:'Finisher', tkNote:'Takhleesa: count a joker as 20 in the hand total.', close:'Close',
+  players:'Players', nPlayers:'{n} players', names:'Names', playerN:'Player {n}', nineRounds:'Every game is 9 rounds.',
+  replaces:'This replaces the current game.', startGame:'Start game',
+  errWho:'Choose who finished the round and how.', errCards:'Enter the cards left in {n}’s hand (a whole number).', errNames:'Each player needs a different name.',
+  tSaved:'Round {i} saved', tUpdated:'Round {i} updated', tDeleted:'Round {i} deleted', tNew:'New game started', undone:'Undone: {l}',
+  l_save:'save round {i}', l_edit:'edit round {i}', l_del:'delete round {i}', l_new:'new game',
+  anyHand:'Any hand takes the lead', aheadBy:'+{n} ahead', tieWord:'ties', onlyZat:'only a Zat wins', needsOne:'Needs a {t} to lead', ties:'({t} ties)', tiesLead:'{t} ties for the lead',
+  orOver:'or {p} over {k} rounds', needsOver:'Needs {p} over {k} rounds', needsZat:'Needs a {z} to win', zat:'Zat', zatNote:'No mix of hands is enough in {n} rounds', zatNoteLast:'No hand is enough in the last round',
+ },
+ ar:{
+  appTitle:'حاسبة الهند', sub:'{p} لاعبين · {r} جولات · الأقل نقاطاً يفوز', round:'الجولة', gameOver:'انتهت اللعبة',
+  sampleNote:'هذه لعبة تجريبية لتجربة التطبيق. ابدأ لعبتك من <b>الإعدادات</b> (رمز الترس) ← لعبة جديدة.',
+  standings:'الترتيب', undo:'تراجع', nothingUndo:'لا يوجد ما يمكن التراجع عنه', leading:'المتصدر', winner:'الفائز',
+  needsNote:'الاحتمالات تفترض أن بقية اللاعبين لم ينزلوا، وتحسب الجولات المتبقية فقط.',
+  wins:'الفائز: {n}', finalTotal:'المجموع النهائي {t} بعد {r} جولات. اضغط على أي جولة بالأسفل لتصحيحها.', newGame:'لعبة جديدة',
+  editingRound:'تعديل الجولة {i}', roundN:'الجولة {i}', whoFinished:'من أنهى الجولة؟', howFinish:'كيف أنهى {n} الجولة؟', cancel:'إلغاء',
+  everyoneElse:'بقية اللاعبين', allNotDown:'الكل لم ينزل', allNotDownEach:'الكل لم ينزل · {n} لكل لاعب',
+  xDown:'{n} نزل', xFoul:'{n} خيّش', xNotDown:'{n} لم ينزل', drawerOpen:'أحد نزل أو خيّش؟', hide:'إخفاء',
+  rulesHint:'لم ينزل = {none} (افتراضي) · نزل = أوراق اليد × {m}{tk} · تخييش = {foul}', tkJoker:' (الجوكر يُحسب 20)',
+  eid:'من الإيد', eidShort:'إيد', downShort:'نزل', xEid:'{n} من الإيد', eidHint:' · من الإيد = +{e} (لاعب واحد)', pickFirst:'اختر أولاً من أنهى الجولة.', notDown:'لم ينزل', wentDown:'نزل', foul:'تخييش', cardsLeft:'أوراق اليد',
+  roundTotal:'مجموع الجولة:', saveRound:'حفظ الجولة', saveChanges:'حفظ التعديل',
+  rounds:'الجولات', tapEdit:'اضغط على جولة لتعديلها', finish:'طريقة الإنهاء', total:'المجموع', noRounds:'لا توجد جولات بعد. سجّل أول جولة بالأعلى.',
+  delQ:'حذف؟', yes:'نعم', no:'لا', deleteRound:'حذف الجولة {i}',
+  settings:'الإعدادات', game:'اللعبة', gameInfo:'{p} لاعبين · 9 جولات لكل لعبة. بدء لعبة جديدة يستبدل اللعبة الحالية (يمكنك التراجع).',
+  appearance:'المظهر', bright:'نهاري', night:'ليلي', language:'اللغة',
+  scoringRef:'حساب النقاط', finisher:'المُنهي', tkNote:'التخليصة: الجوكر يُحسب 20 في مجموع اليد.', close:'إغلاق',
+  players:'اللاعبون', nPlayers:'{n} لاعبين', names:'الأسماء', playerN:'لاعب {n}', nineRounds:'كل لعبة 9 جولات.',
+  replaces:'سيتم استبدال اللعبة الحالية.', startGame:'ابدأ اللعبة',
+  errWho:'اختر من أنهى الجولة وكيف.', errCards:'أدخل مجموع أوراق {n} (رقم صحيح).', errNames:'كل لاعب يحتاج اسماً مختلفاً.',
+  tSaved:'تم حفظ الجولة {i}', tUpdated:'تم تعديل الجولة {i}', tDeleted:'تم حذف الجولة {i}', tNew:'بدأت لعبة جديدة', undone:'تم التراجع: {l}',
+  l_save:'حفظ الجولة {i}', l_edit:'تعديل الجولة {i}', l_del:'حذف الجولة {i}', l_new:'لعبة جديدة',
+  anyHand:'أي هاند يضعه في الصدارة', aheadBy:'متقدم بـ {n}', tieWord:'تعادل', onlyZat:'الزات فقط يفوز', needsOne:'يحتاج {t} للصدارة', ties:'({t} يعادل)', tiesLead:'{t} يعادل المتصدر',
+  orOver:'أو {p} خلال {k}', needsOver:'يحتاج {p} خلال {k}', needsZat:'يحتاج {z} للفوز', zat:'زات', zatNote:'لا يكفي أي هاند خلال {n}', zatNoteLast:'لا يكفي أي هاند في الجولة الأخيرة',
+ }
+};
+
+const ICON = {
+  undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  chev:'<path d="m6 9 6 6 6-6"/>',
+  trash:'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  crown:'<path d="m2 6 4 11h12l4-11-6 5-4-7-4 7z"/>',
+  trophy:'<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
+};
+const ico = (k,cls='') => `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
+const uid = () => Math.random().toString(36).slice(2,9);
+const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LRI='\u2066', PDI='\u2069';   // keep the sign on the left in Arabic (RTL) text
+const fmt = n => LRI+(n<0 ? '−'+Math.abs(n) : (n>0?'+':'')+n)+PDI;
+const fmtT = n => LRI+(n<0 ? '−'+Math.abs(n) : String(n))+PDI;
+
+/* prefs */
+let P = {lang:'en', theme:null};
+try{ Object.assign(P, JSON.parse(localStorage.getItem(PKEY))||{}); }catch(e){}
+function savePrefs(){ try{ localStorage.setItem(PKEY, JSON.stringify(P)); }catch(e){} }
+const L = (k, vars={}) => (STR[P.lang][k] ?? STR.en[k]).replace(/\{(\w+)\}/g,(_,v)=>vars[v]??'');
+const tn = t => P.lang==='ar' ? t.ar : t.en;                     // type name
+const tnAlt = t => P.lang==='ar' ? '' : `<span class="alt" dir="rtl">${t.ar}</span>`;
+const roundsWord = k => P.lang==='ar' ? (k===2?'جولتين':`${k} جولات`) : k;
+function applyPrefs(){
+  const root=document.documentElement;
+  root.lang=P.lang; root.dir = P.lang==='ar'?'rtl':'ltr';
+  if(P.theme) root.dataset.theme=P.theme;
+  document.title = L('appTitle');
+  document.getElementById('apptitle').textContent = L('appTitle');
+  const g=document.getElementById('gear'); g.setAttribute('aria-label',L('settings')); g.title=L('settings');
+}
+function effectiveTheme(){
+  const d=document.documentElement.dataset.theme;
+  if(d==='dark'||d==='light') return d;
+  try{ return matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'; }catch(e){ return 'light'; }
+}
+
+function sample(){
+  const p = ['Fahad','Bader','Saud','Nawaf','Khaled'].map(name=>({id:uid(),name}));
+  const [a,b,c,d,e] = p.map(x=>x.id);
+  const R = (type,winner,ent) => ({id:uid(),type,winner,entries:ent});
+  return { sample:true, rounds:9, players:p, history:[
+    R('norm',a,{[b]:{s:'down',c:34},[c]:{s:'none'},[d]:{s:'down',c:12},[e]:{s:'none'}}),
+    R('tkh',c,{[a]:{s:'down',c:41},[b]:{s:'none'},[d]:{s:'down',c:18},[e]:{s:'foul'}}),
+    R('joker',d,{[a]:{s:'down',c:9},[b]:{s:'down',c:22},[c]:{s:'none'},[e]:{s:'none'}}),
+  ]};
+}
+function load(){ try{ const v = JSON.parse(localStorage.getItem(KEY)); if(v && v.players) return v; }catch(e){} return null; }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+function pointsFor(round, pid){
+  const t = T[round.type];
+  if(pid===round.winner) return t.win;
+  const e = round.entries[pid] || {s:'none'};
+  const extra = (round.eid===pid && t.eid) ? t.eid : 0;   // من الإيد: discarded the winning card
+  if(e.s==='foul') return t.foul + extra;
+  if(e.s==='down') return (Number(e.c)||0) * t.mult + extra;
+  return t.none + extra;
+}
+function totals(){
+  const tot = Object.fromEntries(S.players.map(p=>[p.id,0]));
+  S.history.forEach(r=>S.players.forEach(p=>tot[p.id]+=pointsFor(r,p.id)));
+  return tot;
+}
+
+let S = load() || sample();
+S.rounds = 9;
+let F = freshForm();
+let setup = null, confirmDel = null, formErr = '', showSettings = false, toastTimer;
+const undo = [];
+
+function freshForm(){ return {type:null, winner:null, picking:null, entries:{}, eid:null, editing:null, drawer:false}; }
+function snap(k,i){ undo.push({S:JSON.stringify(S),k,i}); if(undo.length>40) undo.shift(); }
+const undoLabel = u => L(u.k,{i:u.i});
+function toast(msg, canUndo){
+  const el=document.getElementById('toast'); clearTimeout(toastTimer);
+  el.innerHTML=`<div class="toast"><span>${esc(msg)}</span>${canUndo?`<button data-a="undo">${L('undo')}</button>`:''}</div>`;
+  toastTimer=setTimeout(()=>{el.innerHTML='';},5000);
+}
+function doUndo(){
+  const u=undo.pop(); if(!u) return;
+  S=JSON.parse(u.S); F=freshForm(); confirmDel=null; setup=null; save(); render(); toast(L('undone',{l:undoLabel(u)}),false);
+}
+function entry(pid){ return F.entries[pid] || (F.entries[pid]={s:'none',c:''}); }
+function nameOf(id){ return (S.players.find(p=>p.id===id)||{}).name||''; }
+
+function render(){
+  applyPrefs();
+  const tot = totals();
+  const n = S.history.length, over = n >= S.rounds;
+  document.getElementById('progress').innerHTML =
+    `<span class="val">${over?L('gameOver'):`${L('round')} <span class="num">${n+1}/${S.rounds}</span>`}</span><span class="pips" role="img" aria-label="${n}/${S.rounds}">${Array.from({length:S.rounds},(_,i)=>`<i class="${i<n?'done':(i===n&&!over?'now':'')}"></i>`).join('')}</span>`;
+  document.getElementById('subline').textContent = L('sub',{p:S.players.length, r:S.rounds});
+
+  const ranked = [...S.players].sort((a,b)=>tot[a.id]-tot[b.id]);
+  let html = '';
+
+  if(setup){ html += setupHTML(); }
+  else {
+    if(S.sample) html += `<div class="note">${L('sampleNote')}</div>`;
+    const lastU = undo[undo.length-1];
+    html += `<section><div class="sec-h"><h2>${L('standings')}</h2><button data-a="undo" ${lastU?'':'disabled'} title="${esc(lastU?L('undo')+': '+undoLabel(lastU):L('nothingUndo'))}" class="link press">${ico('undo')}${L('undo')}</button></div>
+      <div class="standings">${ranked.map(p=>{
+        const lead = n>0 && tot[p.id]===tot[ranked[0].id];
+        return `<div class="pl ${lead?'lead':''}"><div class="rk"><span class="nm" title="${esc(p.name)}">${esc(p.name)}</span>${lead?`<span class="tag">${ico('crown','sm')}${L(over?'winner':'leading')}</span>`:''}</div>
+          <div class="tot">${fmtT(tot[p.id])}</div>
+          ${over?'':`<div class="dl">${needs(p.id,tot)}</div>`}</div>`;}).join('')}</div>
+      </section>`;
+
+    if(over && !F.editing){
+      const w = ranked[0];
+      html += `<section class="final"><h3>${ico('trophy')}${L('wins',{n:esc(w.name)})}</h3>
+        <div>${L('finalTotal',{t:`<span class="num">${fmtT(tot[w.id])}</span>`, r:S.rounds})}</div>
+        <div class="chips"><button class="btn primary press" data-a="new">${L('newGame')}</button></div></section>`;
+    } else html += formHTML();
+
+    html += historyHTML(tot);
+  }
+  document.getElementById('app').innerHTML = html;
+  document.getElementById('sheet').innerHTML = sheetHTML();
+}
+
+// Prediction chips: H = Normal Hand, J = Joker, JJ = Double Joker, JJJ = Double Joker Colored, Z = Zat.
+// One chip = one round. The full sentence is kept as the accessible label / tooltip.
+const CHIP = ['H','J','JJ','JJJ'];
+const chip = (i, cls='') => `<span class="tk t${i} ${cls}">${CHIP[i]}</span>`;
+function chipRow(idx, cls=''){
+  const sorted=[...idx].sort((a,b)=>b-a), runs=[];
+  sorted.forEach(i=>{ const r=runs[runs.length-1]; if(r&&r.i===i) r.n++; else runs.push({i,n:1}); });
+  return `<span class="crow ${cls}">`+runs.map(r=> r.n>3 ? chip(r.i)+`<span class="times">× ${r.n}</span>` : chip(r.i).repeat(r.n)).join('')+`</span>`;
+}
+const pred = (text, body) => `<span class="pred" role="img" aria-label="${esc(text.replace(/<[^>]+>/g,''))}" title="${esc(text.replace(/<[^>]+>/g,''))}">${body}</span>`;
+
+function needs(pid,tot){
+  const others = S.players.filter(p=>p.id!==pid);
+  const best = Math.min(...others.map(o=>tot[o.id]));
+  const gap = tot[pid]-best;                          // >0: behind the best other player
+  if(S.history.length===0) return pred(L('anyHand'), `<span class="crow">${chip(0)}</span>`);
+  if(gap<0) return `<span class="ahead">${L('aheadBy',{n:`<b class="num">${-gap}</b>`})}</span>`;
+  const left = S.rounds - S.history.length;           // rounds still to play, including this one
+  const HANDS = TYPES.filter(t=>t.id!=='tkh');        // suggestions never rely on a Takhleesa
+  const swing = t => t.none - t.win;                  // gap closed when this player finishes with t and the leader is not down
+  // Every mix of hands that fits in the rounds left (counts per hand type, order doesn't matter).
+  let fastest=null, easiest=null, tie1=null; const valid=[];
+  const better = (a,b,keys) => { for(const k of keys){ if(a[k]!==b[k]) return a[k]<b[k]; } return false; };
+  const walk = (start, k, sum, idx) => {
+    if(k>0){
+      const o = {idx:[...idx], k, top:idx[idx.length-1], weight:idx.reduce((a,b)=>a+b,0)};
+      if(sum > gap){
+        valid.push(o);
+        return;                                       // adding more hands only makes this mix longer
+      }
+      if(k===1 && sum===gap && (!tie1 || o.top<tie1.top)) tie1=o;
+    }
+    if(k===left) return;
+    for(let i=start;i<HANDS.length;i++){ idx.push(i); walk(i, k+1, sum+swing(HANDS[i]), idx); idx.pop(); }
+  };
+  walk(0,0,0,[]);
+  valid.forEach(o=>{ if(!fastest || better(o,fastest,['k','top','weight'])) fastest=o; });
+  // Second option only when it is realistic: smaller hands and at most one extra round.
+  if(fastest) valid.forEach(o=>{ if(o.k<=fastest.k+1 && (!easiest || better(o,easiest,['top','k','weight']))) easiest=o; });
+  const label = o => {
+    const cnt={}; o.idx.forEach(i=>cnt[i]=(cnt[i]||0)+1);
+    return Object.entries(cnt).sort((a,b)=>b[0]-a[0]).map(([i,c])=>(c>1?c+' × ':'')+tn(HANDS[i])).join(' + ');
+  };
+  const tieChip = tie1 ? `<span class="tie">${chip(tie1.top,'dash')}<span class="times">${L('tieWord')}</span></span>` : '';
+  if(!fastest){
+    // Out of reach with normal hands: only a Zat (زات) can still win it.
+    const text = (tie1?L('tiesLead',{t:tn(HANDS[tie1.top])})+'. ':'') + L('needsZat',{z:L('zat')});
+    return pred(text, `<span class="crow"><span class="tk tz">Z</span>${tieChip}</span><span class="zat-why">${L('onlyZat')}</span>`);
+  }
+  const text = [fastest.k===1 ? L('needsOne',{t:label(fastest)}) + (tie1?' '+L('ties',{t:tn(HANDS[tie1.top])}):'')
+                              : L('needsOver',{p:label(fastest), k:roundsWord(fastest.k)})];
+  let body = chipRow(fastest.idx) ;
+  if(tie1 && fastest.k===1) body = body.replace(/<\/span>$/, tieChip+'</span>');
+  if(easiest && easiest!==fastest && easiest.top<fastest.top){
+    text.push(L('orOver',{p:label(easiest), k:roundsWord(easiest.k)}));
+    body += chipRow(easiest.idx,'alt');
+  }
+  return pred(text.join(' '), body);
+}
+
+function formHTML(){
+  const t = T[F.type];
+  const idx = F.editing ? S.history.findIndex(r=>r.id===F.editing)+1 : S.history.length+1;
+  return `<section class="card" id="entry">
+    <h3>${L(F.editing?'editingRound':'roundN',{i:idx})}</h3>
+    <div class="field"><span class="lab">${L('whoFinished')}</span><div class="pgrid">
+      ${S.players.map(p=>`<button class="chip press" data-a="pick" data-v="${p.id}" aria-pressed="${p.id===F.winner||p.id===F.picking}" aria-haspopup="dialog">${esc(p.name)}${p.id===F.winner&&t&&p.id!==F.picking?` <small>${tn(t)} <span class="num">${fmtT(t.win)}</span></small>`:''}</button>`).join('')}
+    </div></div>
+    <div class="drawer ${F.drawer?'open':''}">
+      <button class="drawer-t press" data-a="drawer" aria-expanded="${F.drawer}">
+        <span class="lab">${L('everyoneElse')}</span>
+        <span class="tog">${F.drawer?L('hide'):L('drawerOpen')}${ico('chev','sm')}</span>
+      </button>
+      ${F.drawer?`<div class="drawer-b">
+        <div class="rows">${S.players.filter(p=>p.id!==F.winner).map(p=>rowHTML(p)).join('')}</div>
+      </div>`:''}
+    </div>
+    ${formErr?`<div class="err-msg">${esc(formErr)}</div>`:''}
+    <div class="actions">
+      <span class="tot"><span class="hint">${L('roundTotal')}</span><b class="num" id="sum">${fmt(roundSum())}</b></span>
+      <span class="btns">${F.editing?`<button class="btn press" data-a="cancel">${L('cancel')}</button>`:''}
+      <button class="btn primary press" data-a="save" ${F.winner?'':'disabled'}>${ico('check')}${L(F.editing?'saveChanges':'saveRound')}</button></span>
+    </div>
+  </section>`;
+}
+function othersSummary(t){
+  const others = S.players.filter(p=>p.id!==F.winner);
+  const down = others.filter(p=>entry(p.id).s==='down').length, foul = others.filter(p=>entry(p.id).s==='foul').length;
+  const parts=[]; if(down) parts.push(L('xDown',{n:down})); if(foul) parts.push(L('xFoul',{n:foul}));
+  const rest = others.length-down-foul;
+  const eidTxt = (F.eid && F.eid!==F.winner && (!t || t.eid)) ? L('xEid',{n:esc(nameOf(F.eid))}) : '';
+  if(!parts.length) return (t?L('allNotDownEach',{n:t.none}):L('allNotDown')) + (eidTxt?' · '+eidTxt:'');
+  if(rest) parts.push(L('xNotDown',{n:rest}));
+  if(eidTxt) parts.push(eidTxt);
+  return parts.join(' · ');
+}
+function rowHTML(p){
+  const e = entry(p.id);
+  const pts = F.winner ? previewPts(p.id) : 0;
+  return `<div class="row ${e.s==='foul'?'is-foul':''}" data-pid="${p.id}">
+    <div class="who">${esc(p.name)}${e.s==='none'?` <span class="hint">${L('notDown')}</span>`:''}</div><div class="pts" id="pts-${p.id}">${F.winner?fmt(pts):'—'}</div>
+    <div class="ctl"><div class="seg" role="group" aria-label="${esc(p.name)}">
+      <button class="press" data-a="st" data-v="down" aria-pressed="${e.s==='down'}">${ico('check','sm')}${L('wentDown')}</button>
+      <button class="foul press" data-a="st" data-v="foul" aria-pressed="${e.s==='foul'}">${ico('check','sm')}${L('foul')}</button>
+      ${(!T[F.type]||T[F.type].eid)?`<button class="eid press" data-a="st" data-v="eid" aria-pressed="${F.eid===p.id}">${ico('check','sm')}${L('eid')}${T[F.type]?` <span class="num">+${T[F.type].eid}</span>`:''}</button>`:''}</div>
+      ${e.s==='down'?`<label class="cards">${L('cardsLeft')} <input id="c-${p.id}" type="number" inputmode="numeric" min="0" step="1" value="${esc(e.c)}" data-cards="${p.id}" placeholder="0"></label>`:''}
+    </div></div>`;
+}
+function previewPts(pid){ return pointsFor({type:F.type,winner:F.winner,entries:F.entries,eid:F.eid},pid); }
+function roundSum(){ return F.winner ? S.players.reduce((s,p)=>s+previewPts(p.id),0) : 0; }
+
+function sheetHTML(){
+  if(showSettings) return settingsHTML();
+  if(!F.picking || setup) return '';
+  return `<div class="scrim" data-a="pickclose"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h">
+    <div class="grab"></div>
+    <div class="sheet-h" id="sheet-h">${L('howFinish',{n:`<b>${esc(nameOf(F.picking))}</b>`})}</div>
+    <div class="ptypes">
+      ${TYPES.map(x=>`<button class="ptype press" data-a="type" data-v="${x.id}" aria-pressed="${F.picking===F.winner&&x.id===F.type}"><span class="a">${tn(x)}</span><span class="b">${P.lang==='ar'?'':x.ar}</span><span class="num">${fmtT(x.win)}</span></button>`).join('')}
+    </div>
+    <button class="btn press" data-a="pickclose">${L('cancel')}</button>
+  </div>`;
+}
+function settingsHTML(){
+  const th = effectiveTheme();
+  const sun = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+  const moon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+  return `<div class="scrim" data-a="setclose"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="set-h">
+    <div class="grab"></div>
+    <div class="sheet-h" id="set-h">${L('settings')}</div>
+    <div class="set-sec">
+      <div class="set-row"><span class="lab">${L('appearance')}</span>
+        <div class="switch" role="group" aria-label="${L('appearance')}">
+          <button class="press" data-a="theme" data-v="light" aria-pressed="${th==='light'}">${sun}${L('bright')}</button>
+          <button class="press" data-a="theme" data-v="dark" aria-pressed="${th==='dark'}">${moon}${L('night')}</button>
+        </div></div>
+      <div class="set-row"><span class="lab">${L('language')}</span>
+        <div class="switch" role="group" aria-label="${L('language')}">
+          <button class="press" data-a="lang" data-v="en" aria-pressed="${P.lang==='en'}" lang="en">English</button>
+          <button class="press" data-a="lang" data-v="ar" aria-pressed="${P.lang==='ar'}" lang="ar">العربية</button>
+        </div></div>
+    </div>
+    <div class="set-sec"><h4>${L('game')}</h4>
+      <div class="hint">${L('gameInfo',{p:S.players.length})}</div>
+      <button class="btn primary press" data-a="new" style="justify-self:start">${L('newGame')}</button></div>
+    <div class="set-sec"><h4>${L('scoringRef')}</h4>
+      <div class="ref-wrap"><table><thead><tr><th>${L('finish')}</th><th>${L('finisher')}</th><th>${L('notDown')}</th><th>${L('wentDown')}</th><th>${L('foul')}</th><th>${L('eid')}</th></tr></thead><tbody>
+      ${TYPES.map(t=>`<tr><td style="text-align:start">${tn(t)} ${tnAlt(t)}</td><td class="c">${fmtT(t.win)}</td><td class="c">${t.none}</td><td class="c">× ${t.mult}</td><td class="c">${t.foul}</td><td class="c">${t.eid?'+'+t.eid:'—'}</td></tr>`).join('')}
+      </tbody></table></div>
+      <div class="hint">${L('tkNote')}</div></div>
+    <button class="btn press" data-a="setclose">${L('close')}</button>
+  </div>`;
+}
+
+function historyHTML(tot){
+  const H = S.history;
+  const head = `<tr><th>#</th><th>${L('finish')}</th>${S.players.map(p=>`<th>${esc(p.name)}</th>`).join('')}<th></th></tr>`;
+  const body = H.length ? H.map((r,i)=>{
+    const t = T[r.type];
+    const del = confirmDel===r.id
+      ? `<span class="confirm">${L('delQ')} <button class="rowbtn press" style="color:var(--red)" data-a="delyes" data-v="${r.id}">${L('yes')}</button><button class="rowbtn press" data-a="delno">${L('no')}</button></span>`
+      : `<button class="rowbtn press" data-a="del" data-v="${r.id}" aria-label="${L('deleteRound',{i:i+1})}">${ico('trash','sm')}</button>`;
+    return `<tr class="row-click ${F.editing===r.id?'editing':''}" data-a="edit" data-v="${r.id}"><td class="num">${i+1}</td>
+      <td class="type-tag">${tn(t)}</td>
+      ${S.players.map(p=>{const v=pointsFor(r,p.id);const e=r.entries[p.id];
+        return `<td class="c ${p.id===r.winner?'w':''} ${e&&e.s==='foul'?'f':''}">${fmt(v)}${e&&e.s==='down'?`<sup class="downm">${L('downShort')}</sup>`:''}${r.eid===p.id&&t.eid?`<sup class="eidm">${L('eidShort')}</sup>`:''}</td>`}).join('')}
+      <td>${del}</td></tr>`;}).join('')
+    : `<tr><td colspan="${S.players.length+3}" class="empty">${L('noRounds')}</td></tr>`;
+  const foot = `<tr><td></td><td>${L('total')}</td>${S.players.map(p=>`<td class="c">${fmtT(tot[p.id])}</td>`).join('')}<td></td></tr>`;
+  return `<section><div class="sec-h"><h2>${L('rounds')}</h2><span class="hint">${L('tapEdit')}</span></div>
+    <div class="tbl-wrap"><table><thead>${head}</thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div></section>`;
+}
+
+function setupHTML(){
+  const s = setup;
+  return `<section class="card">
+    <h3>${L('newGame')}</h3>
+    <div class="field"><span class="lab">${L('players')}</span><div class="pgrid" style="grid-template-columns:repeat(3,1fr)">
+      ${[3,4,5].map(k=>`<button class="chip press" data-a="scount" data-v="${k}" aria-pressed="${s.count===k}">${L('nPlayers',{n:k})}</button>`).join('')}</div></div>
+    <div class="field"><span class="lab">${L('names')}</span><div class="names">
+      ${s.names.slice(0,s.count).map((nm,i)=>`<input id="name-${i}" data-name="${i}" value="${esc(nm)}" placeholder="${L('playerN',{n:i+1})}" maxlength="18" autocomplete="off">`).join('')}</div></div>
+    <div class="hint">${L('nineRounds')}</div>
+    ${formErr?`<div class="err-msg">${esc(formErr)}</div>`:''}
+    <div class="setup-actions"><span class="hint">${L('replaces')}</span>
+      <span class="chips"><button class="btn press" data-a="scancel">${L('cancel')}</button><button class="btn primary press" data-a="sstart">${L('startGame')}</button></span></div>
+  </section>`;
+}
+
+/* events */
+document.addEventListener('click', ev=>{
+  const el = ev.target.closest('[data-a]'); if(!el) return;
+  const a = el.dataset.a, v = el.dataset.v;
+  formErr = '';
+  switch(a){
+    case 'pick': F.picking = v; render(); document.querySelector('.ptype')?.focus(); return;
+    case 'pickclose': F.picking=null; break;
+    case 'type': F.type=v; F.winner=F.picking; delete F.entries[F.winner]; if(F.eid===F.winner) F.eid=null; F.picking=null; break;
+    case 'drawer': F.drawer=!F.drawer; break;
+    case 'settings': showSettings=true; F.picking=null; break;
+    case 'setclose': showSettings=false; break;
+    case 'theme': P.theme=v; savePrefs(); break;
+    case 'lang': P.lang=v; savePrefs(); break;
+    case 'undo': return doUndo();
+    case 'st': { const pid=el.closest('[data-pid]').dataset.pid; const e=entry(pid);
+      if(v==='eid'){ F.eid = F.eid===pid ? null : pid; break; }
+      e.s = e.s===v ? 'none' : v; render();
+      if(e.s==='down'){ const i=document.getElementById('c-'+pid); i&&i.focus(); } return; }
+    case 'save': return saveRound();
+    case 'cancel': F=freshForm(); break;
+    case 'edit': { if(ev.target.closest('button')) return; const r=S.history.find(x=>x.id===v); if(!r) return;
+      F={type:T[r.type].id,winner:r.winner,picking:null,editing:r.id,eid:r.eid||null,drawer:!!r.eid||Object.values(r.entries).some(e=>e.s!=='none'),
+         entries:Object.fromEntries(Object.entries(r.entries).map(([k,e])=>[k,{s:e.s,c:e.c??''}]))};
+      render(); document.getElementById('entry')?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'}); return; }
+    case 'del': confirmDel=v; break;
+    case 'delno': confirmDel=null; break;
+    case 'delyes': { const i=S.history.findIndex(r=>r.id===v)+1; snap('l_del',i); S.history=S.history.filter(r=>r.id!==v); toast(L('tDeleted',{i}),true);
+      if(F.editing===v) F=freshForm(); confirmDel=null; save(); break; }
+    case 'new': showSettings=false; setup={count:S.players.length,names:[...S.players.map(p=>p.name),'','','','',''].slice(0,5)};
+      if(S.sample) setup.names=['','','','','']; break;
+    case 'scount': setup.count=+v; break;
+    case 'scancel': setup=null; break;
+    case 'sstart': return startGame();
+    default: return;
+  }
+  render();
+});
+document.addEventListener('input', ev=>{
+  const t = ev.target;
+  if(t.dataset.cards){ entry(t.dataset.cards).c = t.value; t.classList.remove('err'); updatePreview(); }
+  if(t.dataset.name!==undefined && setup){ setup.names[+t.dataset.name] = t.value; }
+});
+document.addEventListener('keydown', ev=>{ if(ev.key==='Escape' && (showSettings||F.picking)){ showSettings=false; F.picking=null; render(); }});
+
+function updatePreview(){
+  S.players.forEach(p=>{ const el=document.getElementById('pts-'+p.id); if(el) el.textContent = F.winner?fmt(previewPts(p.id)):'—'; });
+  const s=document.getElementById('sum'); if(s) s.textContent=fmt(roundSum());
+}
+
+function saveRound(){
+  if(!F.winner||!F.type){ formErr=L('errWho'); return render(); }
+  for(const p of S.players){
+    if(p.id===F.winner) continue;
+    const e = entry(p.id);
+    if(e.s==='down'){
+      const n = Number(e.c);
+      if(e.c==='' || !Number.isFinite(n) || n<0 || !Number.isInteger(n)){
+        formErr = L('errCards',{n:p.name}); F.drawer=true; render();
+        const i=document.getElementById('c-'+p.id); if(i){i.classList.add('err');i.focus();} return;
+      }
+    }
+  }
+  const entries = {};
+  S.players.forEach(p=>{ if(p.id!==F.winner){ const e=entry(p.id); entries[p.id]= e.s==='down'?{s:'down',c:Number(e.c)}:{s:e.s}; }});
+  const round = {id:F.editing||uid(), type:F.type, winner:F.winner, entries, eid:(T[F.type].eid && F.eid && F.eid!==F.winner)?F.eid:null};
+  const idx = F.editing ? S.history.findIndex(r=>r.id===F.editing)+1 : S.history.length+1;
+  snap(F.editing?'l_edit':'l_save', idx);
+  toast(L(F.editing?'tUpdated':'tSaved',{i:idx}), true);
+  if(F.editing) S.history = S.history.map(r=>r.id===F.editing?round:r);
+  else S.history.push(round);
+  F = freshForm(); save(); render();
+}
+
+function startGame(){
+  const names = setup.names.slice(0,setup.count).map((n,i)=>n.trim()||L('playerN',{n:i+1}));
+  const lower = names.map(n=>n.toLowerCase());
+  if(new Set(lower).size!==lower.length){ formErr=L('errNames'); return render(); }
+  snap('l_new',0); toast(L('tNew'),true);
+  S = {rounds:9, players:names.map(name=>({id:uid(),name})), history:[]};
+  setup=null; F=freshForm(); save(); render();
+}
+
+// Android back button: close the topmost sheet or form; return true if something closed.
+window.__back = () => {
+  if(showSettings){ showSettings=false; render(); return true; }
+  if(F.picking){ F.picking=null; render(); return true; }
+  if(setup){ setup=null; render(); return true; }
+  if(F.editing){ F=freshForm(); render(); return true; }
+  return false;
+};
+render();
+})();
+</script>
+
+<script>
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+</script>
+</body></html>
