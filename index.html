@@ -1,5 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7V+JHg1dbQaxxhD/o1py9lLqa5eFhVLv6seeLYUAvkE=' 'sha256-KtqX/dTFKmFgreZMXrrvEQiJc00NWi+lgOmhRPZuPjQ='; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; manifest-src 'self'; worker-src 'self'; connect-src 'self'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#8E1D24">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -450,7 +452,8 @@ const fmtT = n => LRI+(n<0 ? '−'+Math.abs(n) : String(n))+PDI;
 
 /* prefs */
 let P = {lang:'en', theme:null};
-try{ Object.assign(P, JSON.parse(localStorage.getItem(PKEY))||{}); }catch(e){}
+try{ const v=JSON.parse(localStorage.getItem(PKEY));   // only accept known values
+  if(v && typeof v==='object'){ if(v.lang==='en'||v.lang==='ar') P.lang=v.lang; if(v.theme==='light'||v.theme==='dark') P.theme=v.theme; } }catch(e){}
 function savePrefs(){ try{ localStorage.setItem(PKEY, JSON.stringify(P)); }catch(e){} }
 const L = (k, vars={}) => (STR[P.lang][k] ?? STR.en[k]).replace(/\{(\w+)\}/g,(_,v)=>vars[v]??'');
 const tn = t => P.lang==='ar' ? t.ar : t.en;                     // type name
@@ -480,7 +483,35 @@ function sample(){
     R('joker',d,{[a]:{s:'down',c:9},[b]:{s:'down',c:22},[c]:{s:'none'},[e]:{s:'none'}}),
   ]};
 }
-function load(){ try{ const v = JSON.parse(localStorage.getItem(KEY)); if(v && v.players) return v; }catch(e){} return null; }
+/* ---- Saved-data validation: anything read from storage is checked and rebuilt from known-good values.
+   Bad entries are dropped; if the game can't be rebuilt, the raw text is kept under "<key>-corrupt" and a fresh game starts. */
+const ID_RE=/^[a-z0-9]{1,16}$/;
+const cleanName = n => String(n ?? '').replace(/[\u0000-\u001f\u007f<>]/g,'').trim().slice(0,18);
+const intIn = (v,min,max) => { const n=Number(v); return Number.isInteger(n)&&n>=min&&n<=max ? n : null; };
+function readStore(key, clean){
+  let raw=null; try{ raw=localStorage.getItem(key); }catch(e){ return null; }
+  if(raw===null) return null;
+  let v=null; try{ v=clean(JSON.parse(raw)); }catch(e){ v=null; }
+  if(!v){ try{ localStorage.setItem(key+'-corrupt', raw); }catch(e){} }
+  return v;
+}
+function cleanHand(v){
+  if(!v||typeof v!=='object'||!Array.isArray(v.players)||!Array.isArray(v.history)) return null;
+  const players=v.players.filter(p=>p&&typeof p==='object'&&ID_RE.test(p.id)).map(p=>({id:p.id,name:cleanName(p.name)||'?'}));
+  if(players.length<3||players.length>5||new Set(players.map(p=>p.id)).size!==players.length) return null;
+  const ids=new Set(players.map(p=>p.id)), ok=id=>typeof id==='string'&&ids.has(id), history=[];
+  for(const r of v.history.slice(0,500)){
+    if(!r||typeof r!=='object'||!ID_RE.test(r.id)||typeof r.type!=='string'||!Object.hasOwn(T,r.type)||!ok(r.winner)) continue;
+    const entries={};
+    for(const pl of players){ if(pl.id===r.winner) continue;
+      const e=(r.entries&&typeof r.entries==='object'&&Object.hasOwn(r.entries,pl.id))?r.entries[pl.id]:null;
+      const st=(e&&['none','down','foul'].includes(e.s))?e.s:'none';
+      entries[pl.id] = st==='down' ? {s:'down',c:intIn(e.c,0,999)??0} : {s:st}; }
+    history.push({id:r.id,type:r.type,winner:r.winner,entries,eid:(ok(r.eid)&&r.eid!==r.winner)?r.eid:null});
+  }
+  return {sample:v.sample===true, rounds:9, players, history};
+}
+function load(){ return readStore(KEY, cleanHand); }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 
 function pointsFor(round, pid){
@@ -814,7 +845,7 @@ function saveRound(){
     const e = entry(p.id);
     if(e.s==='down'){
       const n = Number(e.c);
-      if(e.c==='' || !Number.isFinite(n) || n<0 || !Number.isInteger(n)){
+      if(e.c==='' || !Number.isFinite(n) || n<0 || n>999 || !Number.isInteger(n)){
         formErr = L('errCards',{n:p.name}); F.drawer=true; render();
         const i=document.getElementById('c-'+p.id); if(i){i.classList.add('err');i.focus();} return;
       }
@@ -832,7 +863,7 @@ function saveRound(){
 }
 
 function startGame(){
-  const names = setup.names.slice(0,setup.count).map((n,i)=>n.trim()||L('playerN',{n:i+1}));
+  const names = setup.names.slice(0,setup.count).map((n,i)=>cleanName(n)||L('playerN',{n:i+1}));
   const lower = names.map(n=>n.toLowerCase());
   if(new Set(lower).size!==lower.length){ formErr=L('errNames'); return render(); }
   snap('l_new',0); toast(L('tNew'),true);
@@ -885,7 +916,29 @@ function tSample(){
     {id:uid(),k:0,owner:c,cs:['trix'],d:{trix:[c,a,d,b]}},
   ]};
 }
-function tLoad(){ try{ const v=JSON.parse(localStorage.getItem(TKEY)); if(v&&v.players) return v; }catch(e){} return null; }
+function cleanTrix(v){
+  if(!v||typeof v!=='object'||!Array.isArray(v.players)||!Array.isArray(v.deals)) return null;
+  const players=v.players.filter(p=>p&&typeof p==='object'&&ID_RE.test(p.id)).map(p=>({id:p.id,name:cleanName(p.name)||'?'}));
+  if(players.length!==4||new Set(players.map(p=>p.id)).size!==4) return null;
+  const ids=new Set(players.map(p=>p.id)), ok=id=>typeof id==='string'&&ids.has(id), C=new Set(TXC.map(c=>c.id));
+  const counts=o=>{ const out={}; if(o&&typeof o==='object') for(const id of ids) if(Object.hasOwn(o,id)){ const n=intIn(o[id],0,13); if(n) out[id]=n; } return out; };
+  const deals=[];
+  for(const d of v.deals.slice(0,100)){
+    if(!d||typeof d!=='object'||!ID_RE.test(d.id)||intIn(d.k,0,3)===null||!ok(d.owner)||!Array.isArray(d.cs)) continue;
+    const cs=TXC.map(c=>c.id).filter(c=>d.cs.includes(c));
+    if(!cs.length||(cs.includes('trix')&&cs.length>1)) continue;
+    const D=(d.d&&typeof d.d==='object')?d.d:{}, nd={};
+    if(cs.includes('king')){ if(!ok(D.king?.t)) continue; nd.king={t:D.king.t, dbl:ok(D.king.dbl)?D.king.dbl:null}; }
+    if(cs.includes('queens')){ const t={},dbl={}; if(SUITS.some(x=>!ok(D.queens?.t?.[x.k]))) continue;
+      SUITS.forEach(x=>{ t[x.k]=D.queens.t[x.k]; dbl[x.k]=ok(D.queens?.dbl?.[x.k])?D.queens.dbl[x.k]:null; }); nd.queens={t,dbl}; }
+    if(cs.includes('diamonds')) nd.diamonds=counts(D.diamonds);
+    if(cs.includes('coll')) nd.coll=counts(D.coll);
+    if(cs.includes('trix')){ const o=Array.isArray(D.trix)?[...new Set(D.trix.filter(ok))]:[]; if(o.length!==4) continue; nd.trix=o; }
+    deals.push({id:d.id,k:d.k,owner:d.owner,cs,d:nd});
+  }
+  return {sample:v.sample===true, mode:v.mode==='partners'?'partners':'solo', complex:v.complex===true, players, deals};
+}
+function tLoad(){ return readStore(TKEY, cleanTrix); }
 function tSave(){ try{ localStorage.setItem(TKEY, JSON.stringify(TS)); }catch(e){} }
 let TS = tLoad() || tSample();
 let TF = tFresh(), TSET=null, tConfirm=null;
@@ -1118,7 +1171,7 @@ function trixAction(a, v, el, ev){
     case 'xcomplexg': TS.complex=!TS.complex; tSave(); break;
     case 'xscancel': TSET=null; break;
     case 'xstart': {
-      const names=TSET.names.map((n,i)=>n.trim()||L('seat',{n:i+1})); const low=names.map(n=>n.toLowerCase());
+      const names=TSET.names.map((n,i)=>cleanName(n)||L('seat',{n:i+1})); const low=names.map(n=>n.toLowerCase());
       if(new Set(low).size!==4){ tErr=L('errNames'); break; }
       tSnap('l_tnew',0); toast(L('tNew'),true);
       TS={mode:TSET.mode, complex:TSET.complex, players:names.map(name=>({id:uid(),name})), deals:[]};
